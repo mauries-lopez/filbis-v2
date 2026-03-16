@@ -88,6 +88,7 @@ export function SpeechToText() {
     const [isRecording, setIsRecording] = useState(false);
     const [recognition, setRecognition] = useState(new webkitSpeechRecognition());
 	const [speechRecognitionList, setSpeechRecognitionList] = useState(new webkitSpeechGrammarList());
+	const [languagePrompt, setLanguagePrompt] = useState("Please speak in English");
 
 	// Depricated - Soft Deprication
 	// start, stop are unused
@@ -327,8 +328,20 @@ export function SpeechToText() {
 		}
 	}, [webkitTranscript]);
 
-	// For the little dialog transcription box that appears when the user speaks into the microphone.
+	//for re-evaluating the chosen language
+	useEffect(() => {
+		let language = document.cookie.replace(/.*lang=(cebuano|filipino|english).*/g, "$1");
 
+		if(language === "english")
+			setLanguagePrompt("Please speak in English.");
+		else if(language === "filipino") 
+			setLanguagePrompt("Magsalita po ng Tagalog.");
+		else
+			setLanguagePrompt("Palihog sulti ug Cebuano.");
+
+	}, [isVoiceMuted, storedChoices]);
+
+	// For the little dialog transcription box that appears when the user speaks into the microphone.
 	// This function is called when the user submits the form or presses the send button.
 	const handleSpeechToTextSubmit: FormEventHandler<HTMLFormElement> = async e => {
 
@@ -469,6 +482,9 @@ export function SpeechToText() {
 									<Microphone className="icon" />
 								</button>
 							</IconContext.Provider>
+							<div>
+								{ languagePrompt }
+							</div>
 						</div>
 					)}
 				</form>

@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
 	// if setting the language
 	if (text === 'english' || text === 'cebuano') {
 		ckies.set('lang', text, { secure: true })
-	} else if (text === 'tagalog') {
+	} else if (text === 'tagalog' || text === 'filipino') {
 		ckies.set('lang', 'filipino', { secure: true })
 	}
 

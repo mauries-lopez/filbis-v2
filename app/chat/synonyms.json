@@ -1171,17 +1171,23 @@
     "filipino": [
       "filipino",
       "tagalog",
-      "tl"
+      "tl",
+      "pilipino",
+      "filipina"
     ],
     "tagalog": [
       "filipino",
       "tagalog",
-      "tl"
+      "tl",
+      "pilipino",
+      "filipina"
     ],
     "tl": [
       "filipino",
       "tagalog",
-      "tl"
+      "tl",
+      "pilipino",
+      "filipina"
     ],
     "en": [
       "en",

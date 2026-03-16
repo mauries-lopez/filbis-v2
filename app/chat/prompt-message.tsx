@@ -3,6 +3,9 @@
 import { HTMLAttributes, useEffect, useRef, useState } from 'react'
 import { useChatActions, useIsMuted, usePrompt, useVoice } from './store'
 import { getSpeechToken } from '../api/auth/ttsauth';
+import {
+	SpeakerHigh
+} from '@phosphor-icons/react'
 import axios from "axios";
 
 type PromptMessageProps = {
@@ -27,18 +30,22 @@ export function PromptMessage({ prompt, voice, ...props }: PromptMessageProps) {
 	const [audioUrl, setAudioUrl] = useState(null);
 	const [audioElement, setAudioElement] = useState(new Audio());
 
+	const [isTalking, setTalking] = useState(false);
+
 	const apiKey = getSpeechToken();
 
-	//console.log("API: \n")
-	//console.log(apiKey);
-	//console.log(ttsAuth);
-	console.log(getSpeechToken())
-	const synthesizeSpeech = async (textToConvert: string) => {
+	const synthesizeSpeech = async (textToConvert: string, language: string) => {
 		const url = `https://texttospeech.googleapis.com/v1/text:synthesize?key=${apiKey}`;
 		setText(textToConvert);
+		let voice: object;
+		if(language === "english")
+			voice = { languageCode: "en-US", name: "en-US-Journey-O"} //English
+		else
+			voice = { languageCode: "fil-PH", name: "fil-PH-Wavenet-A" } // Filipino voice, this will not be active if it's cebuano
+
 		const requestData = {
 		  input: { text },
-		  voice: { languageCode: "fil-PH", name: "fil-PH-Wavenet-A" }, // Filipino voice
+		  voice,
 		  audioConfig: { audioEncoding: "MP3" },
 		};
 	
@@ -46,7 +53,9 @@ export function PromptMessage({ prompt, voice, ...props }: PromptMessageProps) {
 		  const response = await axios.post(url, requestData);
 		  const audioContent = response.data.audioContent;
 		  audioElement.src = `data:audio/mp3;base64,${audioContent}`;
-		  audioElement.play();
+		  audioElement.play()
+					.then(() => {console.log("started talking"); setTalking(true)})
+					.catch((error) => console.log('Error playing audio:', error));
 		} catch (error) {
 		  console.error("Error synthesizing speech:", error);
 		}
@@ -94,18 +103,59 @@ export function PromptMessage({ prompt, voice, ...props }: PromptMessageProps) {
 	useEffect(() => {
 		if (!isMuted) {
 			console.log("USE-EFFECT: " + typeof(text) +  ": " + text);
-			synthesizeSpeech(text);			
+			let language : string = document.cookie.replace(/.*lang=(cebuano|filipino|english).*/g, "$1");
+			if(language !== "cebuano")
+				synthesizeSpeech(text, language);			
+			else{
+				if (storedVoiceName && !isMuted) {
+					const fetchAudio = async () => {
+						const extensions = ['.wav']; // List of possible extensions
+						let audioSource = '';
+						for (const ext of extensions) {
+							try {
+								const response = await fetch(`${storedVoiceName}${ext}`);
+								if (response.ok) {
+									audioSource = `${storedVoiceName}${ext}`;
+									break;
+								}
+								} catch (error) {
+									console.error('Error fetching audio:', error);
+								}
+							}
+							if (audioSource) {
+								audioElement.setAttribute('src', audioSource);
+								audioElement.load();
+								audioElement.play()
+										.then(() => {console.log("started talking"); setTalking(true)})
+										.catch((error) => console.error('Error playing audio:', error));
+							} else {
+								console.error('No audio source found');
+							}
+							};
+							fetchAudio();
+						}
+			}
 		}
 	}, [text, isMuted])
 	
 	useEffect(() => {
-		if (player.current) player.current.volume = isMuted ? 0 : 1
+		if (audioElement) audioElement.volume = isMuted ? 0 : 1
 	}, [isMuted])
+
+	useEffect(() => {
+		let sentry = setInterval(() => {
+			if(audioElement.ended){
+				setTalking(false);
+				clearInterval(sentry);
+			}
+		}, 500);
+	},[isTalking]);
 
 	return (
 		<>
 			<p {...props}>{storedPrompt}</p>
 			<audio ref={player}></audio>
+			{ isTalking ? <SpeakerHigh size={64} /> : <></>}
 		</>
 	)
 }
